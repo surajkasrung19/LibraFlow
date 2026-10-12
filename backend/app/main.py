@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from app.api import general
+from app.api import general, info
+
 
 app = FastAPI(
     title="LibraFlow API",
@@ -8,3 +9,7 @@ app = FastAPI(
 )
 
 app.include_router(general.router)
+
+app.include_router(info.router)
+
+
