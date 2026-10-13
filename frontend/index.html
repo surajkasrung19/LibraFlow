@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>LibraFlow | Library Management</title>
+
+    <link rel="stylesheet" href="/static/css/styles.css">
+
+    <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h1>LibraFlow</h1>
+            <p>Library Management Dashboard</p>
+        </header>
+
+        <main>
+            <section class="stats">
+                <div class="stat-card">
+                    <h2>Total Titles</h2>
+                    <p id="total-books">0</p>
+                </div>
+
+                <div class="stat-card">
+                    <h2>Total Copies</h2>
+                    <p id="total-copies">0</p>
+                </div>
+
+                <div class="stat-card">
+                    <h2>Available Copies</h2>
+                    <p id="available-copies">0</p>
+                </div>
+            </section>
+
+            <div class="search-container">
+                <label for="site-search">Search books</label>
+
+                <input 
+                type="search"
+                id="site-search"
+                placeholder="Search by title or author..."
+                autocomplete="off"
+                />
+            </div>
+        
+            
+            <section class="books-section">
+                <h2>Book Catalogue</h2>
+
+                <form id="book-form">
+                    <input
+                        type="text"
+                        id="title"
+                        placeholder="Book title"
+                        required
+                    >
+
+                    <input
+                        type="text"
+                        id="author"
+                        placeholder="Author"
+                        required
+                    >
+
+                    <input
+                        type="text"
+                        id="isbn"
+                        placeholder="ISBN"
+                        required
+                    >
+
+                    <input
+                        type="number"
+                        id="total_copies"
+                        placeholder="Total copies"
+                        min="1"
+                        required
+                    >
+
+                    <button type="submit">
+                        Add Book
+                    </button>
+                </form>
+
+                <p id="message" role="status"></p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>ISBN</th>
+                                <th>Available</th>
+                            </tr>
+                        </thead>
+                        <tbody id="books-table"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
