@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import general, info
+from app.api import general, info, books
 
 
 app = FastAPI(
@@ -9,7 +9,9 @@ app = FastAPI(
 )
 
 app.include_router(general.router)
-
 app.include_router(info.router)
+app.include_router(books.router)
+
+
 
 
