@@ -96,6 +96,7 @@
                                 <th>Author</th>
                                 <th>ISBN</th>
                                 <th>Available</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="books-table"></tbody>
@@ -104,5 +105,51 @@
             </section>
         </main>
     </div>
+    <dialog id="edit-dialog" aria-labelledby="edit-heading">
+    <div class="dialog-header">
+        <h2 id="edit-heading">Edit Book</h2>
+
+        <button type="button" id="close-edit" aria-label="Close">
+            ×
+        </button>
+    </div>
+
+    <form id="edit-book-form">
+        <label for="edit-title">Book Title</label>
+        <input
+            type="text"
+            id="edit-title"
+            maxlength="200"
+            required
+        >
+
+        <label for="edit-author">Author</label>
+        <input
+            type="text"
+            id="edit-author"
+            maxlength="150"
+            required
+        >
+
+        <label for="edit-category">Category</label>
+        <input
+            type="text"
+            id="edit-category"
+            maxlength="100"
+        >
+
+        <p id="edit-message" role="status"></p>
+
+        <div class="dialog-actions">
+            <button type="button" id="cancel-edit">
+                Cancel
+            </button>
+
+            <button type="submit" id="save-edit">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</dialog>
 </body>
 </html>

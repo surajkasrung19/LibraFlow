@@ -151,3 +151,99 @@ th {
     padding: 32px 16px;
     font-style: italic;
 }
+
+/* Edit Book Dialog */
+
+#edit-dialog {
+    width: min(450px, calc(100% - 32px));
+    border: none;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+
+#edit-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.dialog-header h2 {
+    margin: 0;
+}
+
+#close-edit {
+    background: transparent;
+    color: #64748b;
+    font-size: 24px;
+    padding: 4px 10px;
+}
+
+#edit-book-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#edit-book-form label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+#edit-book-form input {
+    width: 100%;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+#cancel-edit {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+#save-edit {
+    background: #2563eb;
+}
+
+.edit-btn {
+    background: #eff6ff;
+    color: #2563eb;
+    padding: 8px 14px;
+}
+
+.edit-btn:hover {
+    background: #dbeafe;
+}
+
+#edit-message {
+    min-height: 18px;
+    color: #dc2626;
+    font-size: 13px;
+}
+
+.archive-btn {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+    padding: 8px 14px;
+    margin-left: 8px;
+}
+
+.archive-btn:hover {
+    background: #ffedd5;
+}
+
+.archive-btn:focus-visible {
+    outline: 3px solid rgba(194, 65, 12, 0.3);
+    outline-offset: 2px;
+}

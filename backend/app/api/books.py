@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 
 from app.db.session import get_db
-from app.schemas.book import BookCreate, BookResponse
+from app.schemas.book import BookCreate, BookResponse, BookUpdate
 from app.services.book_service import BookService
 from app.services.exceptions import DuplicateBookError
 
@@ -70,3 +70,50 @@ def get_book(
 
     return book
 
+
+@router.patch("/{book_id}", response_model=BookResponse)
+def update_book(
+    book_id: int,
+    book_data: BookUpdate,
+    db: Session = Depends(get_db)
+):
+    service = BookService(db)
+
+    try:
+        updated_book = service.update_book(
+            book_id,
+            book_data
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc)
+        ) from exc
+
+    if updated_book is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found"
+        )
+
+    return updated_book
+
+@router.patch(
+    "/{book_id}/archive",
+    response_model=BookResponse
+)
+def archive_book(
+    book_id: int,
+    db: Session = Depends(get_db)
+):
+    service = BookService(db)
+
+    book = service.archive_book(book_id)
+
+    if book is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found"
+        )
+
+    return book
