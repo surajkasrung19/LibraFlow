@@ -15,6 +15,24 @@ class BookResponse(BookCreate):
     id: int 
     available_copies: int
     created_at: datetime
+    is_active: bool
 
+class BookUpdate(BaseModel):
+    title: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=200
+    )
+
+    author: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=150
+    )
+
+    category: str | None = Field(
+        default=None,
+        max_length=100
+    )
 
 

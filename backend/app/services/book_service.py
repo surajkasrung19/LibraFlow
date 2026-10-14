@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.services.exceptions import DuplicateBookError
 from app.models.book import Book
-from app.schemas.book import BookCreate
+from app.schemas.book import BookCreate, BookUpdate
 
 class BookService:
 
@@ -41,7 +41,11 @@ class BookService:
         
 
     def get_all_books(self) -> list[Book]:
-        statement = select(Book).order_by(Book.id)
+        statement = (
+            select(Book)
+            .where(Book.is_active.is_(True))
+            .order_by(Book.id)
+        )
 
         return list(
             self.db.scalars(statement).all()
@@ -55,4 +59,50 @@ class BookService:
         statement = select(Book).where(Book.isbn == isbn)
 
         return self.db.scalar(statement)
+
+
+    def update_book(
+            self,
+            book_id: int,
+            book_data: BookUpdate
+    ) -> Book | None:
+
+        book = self.get_book_by_id(book_id)
+
+        if book is None:
+            return None
+
+        update_data = book_data.model_dump(
+            exclude_unset=True
+        )
+
+        for field, value in update_data.items():
+            if field in ("title", "author") and value is None:
+                raise ValueError(
+                    f"{field} cannot be null"
+                )
+
+            setattr(book, field, value)
+
+        self.db.commit()
+        self.db.refresh(book)
+
+        return book
+
+
+    def archive_book(self, book_id: int) -> Book | None:
+        book = self.get_book_by_id(book_id)
+
+        if book is None:
+            return None
+
+        if not book.is_active:
+            return book
+
+        book.is_active = False
+
+        self.db.commit()
+        self.db.refresh(book)
+
+        return book
     

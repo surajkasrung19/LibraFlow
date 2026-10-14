@@ -6,6 +6,7 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    Boolean
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -70,3 +71,12 @@ class Book(Base):
         default=lambda: datetime.now(timezone.utc),
         nullable=False
     )
+
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1"
+    )
+
+    

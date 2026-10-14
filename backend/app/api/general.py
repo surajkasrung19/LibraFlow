@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-@router.get("/")
+@router.get("/api/v1/welcome")
 def home():
     return {
         "message": "Welcome to LibraFlow API"
