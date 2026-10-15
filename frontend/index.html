@@ -1,155 +1,216 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>LibraFlow | Library Management</title>
 
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/styles.css" />
 
     <script src="/static/js/app.js" defer></script>
-</head>
-<body>
+  </head>
+  <body>
     <div class="app-container">
-        <header class="header">
-            <h1>LibraFlow</h1>
-            <p>Library Management Dashboard</p>
-        </header>
+      <header class="header">
+        <h1>LibraFlow</h1>
+        <p>Library Management Dashboard</p>
+      </header>
 
-        <main>
-            <section class="stats">
-                <div class="stat-card">
-                    <h2>Total Titles</h2>
-                    <p id="total-books">0</p>
-                </div>
+      <main>
+        <section class="stats">
+          <div class="stat-card">
+            <h2>Total Titles</h2>
+            <p id="total-books">0</p>
+          </div>
 
-                <div class="stat-card">
-                    <h2>Total Copies</h2>
-                    <p id="total-copies">0</p>
-                </div>
+          <div class="stat-card">
+            <h2>Total Copies</h2>
+            <p id="total-copies">0</p>
+          </div>
 
-                <div class="stat-card">
-                    <h2>Available Copies</h2>
-                    <p id="available-copies">0</p>
-                </div>
-            </section>
+          <div class="stat-card">
+            <h2>Available Copies</h2>
+            <p id="available-copies">0</p>
+          </div>
+        </section>
 
-            <div class="search-container">
-                <label for="site-search">Search books</label>
+        <div class="search-container">
+          <label for="site-search">Search books</label>
 
-                <input 
-                type="search"
-                id="site-search"
-                placeholder="Search by title or author..."
-                autocomplete="off"
+          <input
+            type="search"
+            id="site-search"
+            placeholder="Search by title or author..."
+            autocomplete="off"
+          />
+        </div>
+
+        <section class="books-section">
+          <h2>Book Catalogue</h2>
+
+          <form id="book-form">
+            <input type="text" id="title" placeholder="Book title" required />
+
+            <input type="text" id="author" placeholder="Author" required />
+
+            <input type="text" id="isbn" placeholder="ISBN" required />
+
+            <input
+              type="number"
+              id="total_copies"
+              placeholder="Total copies"
+              min="1"
+              required
+            />
+
+            <button type="submit">Add Book</button>
+          </form>
+
+          <p id="message" role="status"></p>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Author</th>
+                  <th>ISBN</th>
+                  <th>Available</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="books-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="members-section">
+          <h2>Member Management</h2>
+          <p>Register and manage library members.</p>
+
+          <div class="member-layout">
+            <div class="member-form-card">
+              <h3>Register Member</h3>
+
+              <form id="member-form">
+                <label for="member-name">Full Name</label>
+                <input
+                  type="text"
+                  id="member-name"
+                  placeholder="Enter full name"
+                  required
+                  minlength="2"
+                  maxlength="150"
                 />
+
+                <label for="member-email">Email Address</label>
+                <input
+                  type="email"
+                  id="member-email"
+                  placeholder="member@example.com"
+                  required
+                  maxlength="255"
+                />
+
+                <label for="member-phone">Phone Number</label>
+                <input
+                  type="tel"
+                  id="member-phone"
+                  placeholder="+919876543210"
+                  maxlength="20"
+                />
+
+                <button type="submit" id="register-member-btn">
+                  Register Member
+                </button>
+              </form>
+
+              <p id="member-message" role="status"></p>
             </div>
-        
-            
-            <section class="books-section">
-                <h2>Book Catalogue</h2>
 
-                <form id="book-form">
-                    <input
-                        type="text"
-                        id="title"
-                        placeholder="Book title"
-                        required
-                    >
+            <div class="member-list-card">
+              <h3>Registered Members</h3>
 
-                    <input
-                        type="text"
-                        id="author"
-                        placeholder="Author"
-                        required
-                    >
+              <input
+                type="search"
+                id="member-search"
+                placeholder="Search by name or email..."
+                aria-label="Search members"
+              />
 
-                    <input
-                        type="text"
-                        id="isbn"
-                        placeholder="ISBN"
-                        required
-                    >
+              <p id="member-count">Active Members: 0</p>
 
-                    <input
-                        type="number"
-                        id="total_copies"
-                        placeholder="Total copies"
-                        min="1"
-                        required
-                    >
+              <div class="member-table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
 
-                    <button type="submit">
-                        Add Book
-                    </button>
-                </form>
-
-                <p id="message" role="status"></p>
-
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Title</th>
-                                <th>Author</th>
-                                <th>ISBN</th>
-                                <th>Available</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="books-table"></tbody>
-                    </table>
-                </div>
-            </section>
-        </main>
+                  <tbody id="members-table"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
     <dialog id="edit-dialog" aria-labelledby="edit-heading">
-    <div class="dialog-header">
+      <div class="dialog-header">
         <h2 id="edit-heading">Edit Book</h2>
 
-        <button type="button" id="close-edit" aria-label="Close">
-            ×
-        </button>
-    </div>
+        <button type="button" id="close-edit" aria-label="Close">×</button>
+      </div>
 
-    <form id="edit-book-form">
+      <form id="edit-book-form">
         <label for="edit-title">Book Title</label>
-        <input
-            type="text"
-            id="edit-title"
-            maxlength="200"
-            required
-        >
+        <input type="text" id="edit-title" maxlength="200" required />
 
         <label for="edit-author">Author</label>
-        <input
-            type="text"
-            id="edit-author"
-            maxlength="150"
-            required
-        >
+        <input type="text" id="edit-author" maxlength="150" required />
 
         <label for="edit-category">Category</label>
-        <input
-            type="text"
-            id="edit-category"
-            maxlength="100"
-        >
+        <input type="text" id="edit-category" maxlength="100" />
 
         <p id="edit-message" role="status"></p>
 
         <div class="dialog-actions">
-            <button type="button" id="cancel-edit">
-                Cancel
-            </button>
+          <button type="button" id="cancel-edit">Cancel</button>
 
-            <button type="submit" id="save-edit">
-                Save Changes
-            </button>
+          <button type="submit" id="save-edit">Save Changes</button>
         </div>
-    </form>
-</dialog>
-</body>
+      </form>
+    </dialog>
+    <dialog id="edit-member-dialog" aria-labelledby="edit-member-heading">
+      <div class="dialog-header">
+        <h2 id="edit-member-heading">Edit Member</h2>
+        <button type="button" id="close-member-edit">×</button>
+      </div>
+
+      <form id="edit-member-form">
+        <label for="edit-member-name">Full Name</label>
+        <input type="text" id="edit-member-name" required maxlength="150" />
+
+        <label for="edit-member-email">Email</label>
+        <input type="email" id="edit-member-email" required maxlength="255" />
+
+        <label for="edit-member-phone">Phone</label>
+        <input type="tel" id="edit-member-phone" maxlength="20" />
+
+        <p id="edit-member-message" role="status"></p>
+
+        <div class="dialog-actions">
+          <button type="button" id="cancel-member-edit">Cancel</button>
+          <button type="submit" id="save-member-edit">Save Changes</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
 </html>
