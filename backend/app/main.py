@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from app.api import general, info, books
+from app.api import general, info, books, members
 
 
 app = FastAPI(
@@ -15,6 +15,7 @@ app = FastAPI(
 app.include_router(general.router)
 app.include_router(info.router)
 app.include_router(books.router)
+app.include_router(members.router)
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -25,6 +26,7 @@ app.mount(
     StaticFiles(directory=FRONTEND_DIR),
     name="static"
 )
+print("FRONTEND DIRECTORY:", FRONTEND_DIR)
 
 @app.get("/", include_in_schema=False)
 def serve_frontend():

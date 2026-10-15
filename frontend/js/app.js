@@ -1,4 +1,5 @@
 const API_URL = "/api/v1/books";
+const MEMBERS_API_URL = "/api/v1/members";
 
 const booksTable = document.getElementById("books-table");
 const bookForm = document.getElementById("book-form");
@@ -17,10 +18,41 @@ const closeEditButton = document.getElementById("close-edit");
 const cancelEditButton = document.getElementById("cancel-edit");
 const saveEditButton = document.getElementById("save-edit");
 
+//member
+const memberForm = document.getElementById("member-form");
+const memberName = document.getElementById("member-name");
+const memberEmail = document.getElementById("member-email");
+const memberPhone = document.getElementById("member-phone");
+
+const membersTable = document.getElementById("members-table");
+const memberMessage = document.getElementById("member-message");
+const memberCount = document.getElementById("member-count");
+const memberSearch = document.getElementById("member-search");
+const registerMemberButton = document.getElementById(
+    "register-member-btn"
+);
+
+const editMemberDialog = document.getElementById("edit-member-dialog");
+const editMemberForm = document.getElementById("edit-member-form");
+
+const editMemberName = document.getElementById("edit-member-name");
+const editMemberEmail = document.getElementById("edit-member-email");
+const editMemberPhone = document.getElementById("edit-member-phone");
+
+const editMemberMessage = document.getElementById("edit-member-message");
+const saveMemberButton = document.getElementById("save-member-edit");
+
+const closeMemberEditButton = document.getElementById("close-member-edit");
+const cancelMemberEditButton = document.getElementById("cancel-member-edit");
+
+let editingMemberId = null;
+
+
 let editingBookId = null;
 let originalBookData = null;
 
 let allBooks = [];
+let allMembers = [];
 
 
 async function loadBooks() {
@@ -136,9 +168,6 @@ function updateStats(books) {
     document.getElementById("available-copies").textContent =
         availableCopies;
 }
-
-
-loadBooks();
 
 
 bookForm.addEventListener("submit", async (event) => {
@@ -380,3 +409,299 @@ async function archiveBook(book) {
         message.textContent = error.message;
     }
 }
+
+
+//members
+async function loadMembers() {
+    try {
+        const response = await fetch(MEMBERS_API_URL);
+
+        if (!response.ok) {
+            throw new Error("Failed to load members");
+        }
+
+        allMembers = await response.json();
+
+        memberCount.textContent =
+            `Active Members: ${allMembers.length}`;
+
+        filterMembers();
+
+    } catch (error) {
+        memberMessage.textContent = error.message;
+    }
+}
+
+function displayMembers(members) {
+    membersTable.replaceChildren();
+
+    if (members.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        cell.colSpan = 5;
+        cell.textContent = "No members found.";
+
+        row.appendChild(cell);
+        membersTable.appendChild(row);
+
+        return;
+    }
+
+    for (const member of members) {
+        const row = document.createElement("tr");
+
+        const values = [
+            member.id,
+            member.full_name,
+            member.email,
+            member.phone ?? "Not provided"
+        ];
+
+        for (const value of values) {
+            const cell = document.createElement("td");
+
+            cell.textContent = String(value);
+            row.appendChild(cell);
+        }
+
+        const actionCell = document.createElement("td");
+
+        //Flex container for action buttons
+        const actionWrapper = document.createElement("div");
+        actionWrapper.classList.add("member-actions");
+        
+        //Edit button
+        const editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.textContent = "Edit";
+        editButton.classList.add("edit-btn");
+
+        editButton.addEventListener("click", () => {
+            openMemberEditDialog(member);
+        });
+
+        actionCell.appendChild(editButton);
+
+        //Deactivate Button
+        const deactivateButton = document.createElement("button");
+
+        deactivateButton.type = "button";
+        deactivateButton.textContent = "Deactivate";
+        deactivateButton.classList.add("deactivate-btn");
+
+        deactivateButton.addEventListener("click", () => {
+            deactivateMember(member, deactivateButton);
+        });
+        
+        // Add both buttons to the same wrapper
+        actionWrapper.appendChild(editButton);
+        actionWrapper.appendChild(deactivateButton);
+
+        actionCell.appendChild(actionWrapper);
+
+        row.appendChild(actionCell);
+        membersTable.appendChild(row);
+    }
+}
+
+function filterMembers() {
+    const searchText = memberSearch.value.trim().toLowerCase();
+
+    const filteredMembers = allMembers.filter((member) => {
+        const nameMatches = member.full_name
+            .toLowerCase()
+            .includes(searchText);
+
+        const emailMatches = member.email
+            .toLowerCase()
+            .includes(searchText);
+
+        return nameMatches || emailMatches;
+    });
+
+    displayMembers(filteredMembers);
+}
+
+memberSearch.addEventListener("input", filterMembers);
+
+
+memberForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    console.log("Member registration form submitted!");
+
+    const memberData = {
+        full_name: memberName.value.trim(),
+        email: memberEmail.value.trim(),
+        phone: memberPhone.value.trim() || null
+    };
+
+    try {
+        registerMemberButton.disabled = true;
+        memberMessage.textContent = "";
+
+        const response = await fetch(MEMBERS_API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(memberData)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            const errorText = typeof data.detail === "string"
+                ? data.detail
+                : "Unable to register member";
+
+            throw new Error(errorText);
+        }
+
+        memberForm.reset();
+
+        memberMessage.textContent =
+            "Member registered successfully!";
+
+        await loadMembers();
+
+    } catch (error) {
+        memberMessage.textContent = error.message;
+
+    } finally {
+        registerMemberButton.disabled = false;
+    }
+});
+
+function openMemberEditDialog(member) {
+    editingMemberId = member.id;
+
+    editMemberName.value = member.full_name;
+    editMemberEmail.value = member.email;
+    editMemberPhone.value = member.phone ?? "";
+
+    editMemberMessage.textContent = "";
+
+    editMemberDialog.showModal();
+}
+
+function closeMemberEditDialog() {
+    editMemberDialog.close();
+    editingMemberId = null;
+    editMemberMessage.textContent = "";
+}
+
+closeMemberEditButton.addEventListener("click", closeMemberEditDialog);
+cancelMemberEditButton.addEventListener("click", closeMemberEditDialog);
+
+editMemberDialog.addEventListener("close", () => {
+    editingMemberId = null;
+});
+
+editMemberForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (editingMemberId === null) {
+        return;
+    }
+
+    const updatedData = {
+        full_name: editMemberName.value.trim(),
+        email: editMemberEmail.value.trim(),
+        phone: editMemberPhone.value.trim() || null
+    };
+
+    try {
+        saveMemberButton.disabled = true;
+        editMemberMessage.textContent = "";
+
+        const response = await fetch(
+            `${MEMBERS_API_URL}/${editingMemberId}`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(updatedData)
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                typeof data.detail === "string"
+                    ? data.detail
+                    : "Failed to update member"
+            );
+        }
+
+        editMemberDialog.close();
+        editingMemberId = null;
+
+        memberMessage.textContent = "Member updated successfully!";
+
+        await loadMembers();
+
+    } catch (error) {
+        editMemberMessage.textContent = error.message;
+    } finally {
+        saveMemberButton.disabled = false;
+    }
+});
+
+async function deactivateMember(member, button) {
+    //1. Ask for confirmation
+    const confirmed = window.confirm(
+        `Are you sure you want to deactivate "${member.full_name}"?`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        //2.Diable button while request is processing 
+        button.diabled - true;
+        memberMessage.textContent = "";
+
+        //3. Send request to FastAPI
+        const response = await fetch(
+            `${MEMBERS_API_URL}/${member.id}/deactivate`,
+            {
+                method:"PATCH"
+            }
+        );
+
+        //4.Check for API errors
+        if (!response.ok) {
+            const data = await response.json();
+
+            throw new Error(
+                typeof data.detail === "string"
+                ? data.detail
+                : "Failed to deactivate member"
+            );
+        }
+
+        //5. Refresh the member list
+        await loadMembers();
+
+        //6. Display success message
+        memberMessage.textContent = 
+            `${member.full_name} has been deactivated successfully!`;
+    
+    } catch (error) {
+        memberMessage.textContent = error.message;
+        console.error("Member deactivation failed:", error);
+    
+    } finally {
+        button.disabled = false
+    }
+}
+
+
+
+loadBooks();
+loadMembers();
