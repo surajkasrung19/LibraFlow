@@ -12,3 +12,8 @@ class DuplicateMemberError(Exception):
         super().__init__(
             f"Member with email {email} already exists"
         )
+
+
+class LoanError(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)

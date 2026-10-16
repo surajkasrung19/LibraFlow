@@ -9,6 +9,7 @@ from app.db.base import Base
 from app.db.session import DATABASE_URL
 from app.models.book import Book
 from app.models.member import Member
+from app.models.loan import Loan
 
 
 # this is the Alembic Config object, which provides

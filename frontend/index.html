@@ -160,6 +160,137 @@
             </div>
           </div>
         </section>
+        <section id="loans-section" class="loans-section">
+          <div class="section-heading">
+            <div>
+              <h2>Loan Management</h2>
+              <p>Issue books, track borrowings, and manage returns.</p>
+            </div>
+          </div>
+
+          <div class="loan-stats">
+            <div class="loan-stat-card">
+              <span>Active Loans</span>
+              <strong id="active-loans-count">0</strong>
+            </div>
+
+            <div class="loan-stat-card">
+              <span>Overdue Loans</span>
+              <strong id="overdue-loans-count">0</strong>
+            </div>
+
+            <div class="loan-stat-card">
+              <span>Returned Loans</span>
+              <strong id="returned-loans-count">0</strong>
+            </div>
+          </div>
+
+          <div class="loan-form-card">
+            <h3>Borrow a Book</h3>
+
+            <form id="borrow-form">
+              <div class="loan-form-grid">
+                <div class="form-field">
+                  <label for="loan-member">Select Member</label>
+                  <select id="loan-member" required>
+                    <option value="">Choose a member</option>
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label for="loan-book">Select Book</label>
+                  <select id="loan-book" required>
+                    <option value="">Choose a book</option>
+                  </select>
+                </div>
+              </div>
+
+              <button type="submit" id="borrow-submit-btn">Issue Book</button>
+            </form>
+
+            <p id="loan-message" role="status" aria-live="polite"></p>
+          </div>
+
+          <div class="loan-table-card">
+            <div class="loan-table-heading">
+              <h3>Active Loans</h3>
+              <button type="button" id="refresh-loans-btn">Refresh</button>
+            </div>
+
+            <div class="loan-table-wrapper">
+              <table class="loan-table">
+                <thead>
+                  <tr>
+                    <th>Loan ID</th>
+                    <th>Member</th>
+                    <th>Book</th>
+                    <th>Borrowed</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="active-loans-body">
+                  <tr>
+                    <td colspan="7">No active loans yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="loan-history-card">
+            <div class="loan-history-header">
+              <div>
+                <h3>Borrowing History
+                  (<span id="loan-history-count">0</span>)
+                </h3>
+                <p>View all borrowed and returned books.</p>
+              </div>
+            </div>
+
+            <div class="loan-history-filters">
+              <div class="form-field">
+                <label for="loan-search">Search Loans</label>
+                <input
+                  type="search"
+                  id="loan-search"
+                  placeholder="Search member, book, or loan ID..."
+                />
+              </div>
+
+              <div class="form-field">
+                <label for="loan-status-filter">Filter by Status</label>
+                <select id="loan-status-filter">
+                  <option value="all">All Loans</option>
+                  <option value="borrowed">Borrowed</option>
+                  <option value="returned">Returned</option>
+                  <option value="overdue">Overdue</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="loan-table-wrapper">
+              <table class="loan-table">
+                <thead>
+                  <tr>
+                    <th>Loan ID</th>
+                    <th>Member</th>
+                    <th>Book</th>
+                    <th>Borrowed</th>
+                    <th>Due Date</th>
+                    <th>Returned</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="loan-history-body">
+                  <tr>
+                    <td colspan="7">Loading loan history...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
     <dialog id="edit-dialog" aria-labelledby="edit-heading">

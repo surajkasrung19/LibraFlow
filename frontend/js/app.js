@@ -54,6 +54,9 @@ let originalBookData = null;
 let allBooks = [];
 let allMembers = [];
 
+let allLoanHistory = [];
+
+
 
 async function loadBooks() {
     try {
@@ -139,8 +142,8 @@ function displayBooks(books) {
 
         actionCell.appendChild(editButton);
         actionCell.appendChild(archiveButton);
-        
-        
+
+
         row.appendChild(actionCell)
         booksTable.appendChild(row);
     }
@@ -470,7 +473,7 @@ function displayMembers(members) {
         //Flex container for action buttons
         const actionWrapper = document.createElement("div");
         actionWrapper.classList.add("member-actions");
-        
+
         //Edit button
         const editButton = document.createElement("button");
         editButton.type = "button";
@@ -481,7 +484,7 @@ function displayMembers(members) {
             openMemberEditDialog(member);
         });
 
-        actionCell.appendChild(editButton);
+
 
         //Deactivate Button
         const deactivateButton = document.createElement("button");
@@ -493,7 +496,7 @@ function displayMembers(members) {
         deactivateButton.addEventListener("click", () => {
             deactivateMember(member, deactivateButton);
         });
-        
+
         // Add both buttons to the same wrapper
         actionWrapper.appendChild(editButton);
         actionWrapper.appendChild(deactivateButton);
@@ -662,8 +665,8 @@ async function deactivateMember(member, button) {
     }
 
     try {
-        //2.Diable button while request is processing 
-        button.diabled - true;
+        //2.Diable button while request is processing
+        button.disabled = true;
         memberMessage.textContent = "";
 
         //3. Send request to FastAPI
@@ -689,19 +692,584 @@ async function deactivateMember(member, button) {
         await loadMembers();
 
         //6. Display success message
-        memberMessage.textContent = 
+        memberMessage.textContent =
             `${member.full_name} has been deactivated successfully!`;
-    
+
     } catch (error) {
         memberMessage.textContent = error.message;
         console.error("Member deactivation failed:", error);
-    
+
     } finally {
         button.disabled = false
     }
 }
 
 
+async function loadLoanMembers() {
+  const memberSelect = document.getElementById("loan-member");
+
+  try {
+    const response = await fetch("/api/v1/members");
+
+    if (!response.ok) {
+      throw new Error("Unable to load members");
+    }
+
+    const members = await response.json();
+
+    memberSelect.replaceChildren(
+      new Option("Choose a member", "")
+    );
+
+    members.forEach((member) => {
+      const option = new Option(
+        `${member.full_name} (${member.email})`,
+        String(member.id)
+      );
+
+      memberSelect.add(option);
+    });
+  } catch (error) {
+    console.error("Failed to load loan members:", error);
+    showLoanMessage(error.message, true);
+  }
+}
+
+
+async function loadLoanBooks() {
+  const bookSelect = document.getElementById("loan-book");
+
+  try {
+    const response = await fetch("/api/v1/books");
+
+    if (!response.ok) {
+      throw new Error("Unable to load books");
+    }
+
+    const books = await response.json();
+
+    bookSelect.replaceChildren(
+      new Option("Choose a book", "")
+    );
+
+    books
+      .filter((book) => book.available_copies > 0)
+      .forEach((book) => {
+        const option = new Option(
+          `${book.title} — ${book.available_copies} available`,
+          String(book.id)
+        );
+
+        bookSelect.add(option);
+      });
+  } catch (error) {
+    console.error("Failed to load loan books:", error);
+    showLoanMessage(error.message, true);
+  }
+}
+
+
+function showLoanMessage(message, isError = false) {
+  const messageElement = document.getElementById("loan-message");
+
+  messageElement.textContent = message;
+  messageElement.style.color = isError ? "#dc2626" : "#15803d";
+}
+
+
+async function handleBorrowSubmit(event) {
+  event.preventDefault();
+
+  const memberSelect = document.getElementById("loan-member");
+  const bookSelect = document.getElementById("loan-book");
+  const submitButton = document.getElementById("borrow-submit-btn");
+
+  const memberId = Number(memberSelect.value);
+  const bookId = Number(bookSelect.value);
+
+  if (!memberId || !bookId) {
+    showLoanMessage("Please select a member and a book.", true);
+    return;
+  }
+
+  submitButton.disabled = true;
+  showLoanMessage("Issuing book...");
+
+  try {
+    const response = await fetch("/api/v1/loans", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        member_id: memberId,
+        book_id: bookId
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        typeof result.detail === "string"
+          ? result.detail
+          : "Failed to issue book"
+      );
+    }
+
+    document.getElementById("borrow-form").reset();
+
+    // Refresh dropdown inventory
+    await Promise.all([
+        loadLoanBooks(),
+        loadBooks(),
+        loadActiveLoans(),
+        loadLoanHistory()
+    ]);
+
+
+    showLoanMessage(
+      `Book issued successfully! Loan #${result.id}`
+    );
+  } catch (error) {
+    showLoanMessage(error.message, true);
+  } finally {
+    submitButton.disabled = false;
+  }
+}
+
+
+async function initializeLoanManagement() {
+  const borrowForm = document.getElementById("borrow-form");
+
+  const refreshButton = document.getElementById(
+    "refresh-loans-btn"
+  );
+
+  if (!borrowForm) return;
+
+    //Register borrowing form listener
+  borrowForm.addEventListener("submit", handleBorrowSubmit);
+
+  //Register search and status filter listeners ONCE
+  initializeLoanHistory();
+
+  if (refreshButton) {
+    refreshButton.addEventListener("click", async () => {
+      refreshButton.disabled = true;
+
+      try {
+        await Promise.all([
+            loadActiveLoans(),
+            loadLoanMembers(),
+            loadLoanBooks(),
+            loadLoanHistory()
+          ]);
+
+        } catch (error) {
+          console.error("Loan refresh error:", error);
+        } finally {
+          refreshButton.disabled = false;
+        }
+      });
+    }
+
+    await Promise.all([
+      loadLoanMembers(),
+      loadLoanBooks(),
+      loadActiveLoans(),
+      loadLoanHistory()
+    ]);
+  }
+
+
+async function loadActiveLoans() {
+  const tbody = document.getElementById("active-loans-body");
+
+  if (!tbody) return;
+
+  try {
+    const [loansResponse, membersResponse, booksResponse] =
+      await Promise.all([
+        fetch("/api/v1/loans"),
+        fetch("/api/v1/members"),
+        fetch("/api/v1/books")
+      ]);
+
+    if (
+      !loansResponse.ok ||
+      !membersResponse.ok ||
+      !booksResponse.ok
+    ) {
+      throw new Error("Failed to load loan information");
+    }
+
+    const loans = await loansResponse.json();
+    const members = await membersResponse.json();
+    const books = await booksResponse.json();
+
+    const memberMap = new Map(
+      members.map(member => [member.id, member.full_name])
+    );
+
+    const bookMap = new Map(
+      books.map(book => [book.id, book.title])
+    );
+
+    const activeLoans = loans.filter(
+      loan => loan.status === "borrowed"
+    );
+
+    const returnedLoans = loans.filter(
+      loan => loan.status === "returned"
+    );
+
+    const now = new Date();
+
+    const overdueLoans = activeLoans.filter(
+      loan => new Date(loan.due_at) < now
+    );
+
+    document.getElementById("active-loans-count").textContent =
+      activeLoans.length;
+
+    document.getElementById("overdue-loans-count").textContent =
+      overdueLoans.length;
+
+    document.getElementById("returned-loans-count").textContent =
+      returnedLoans.length;
+
+    renderActiveLoans(activeLoans, memberMap, bookMap);
+
+  } catch (error) {
+    console.error("Error loading loans:", error);
+
+    tbody.replaceChildren();
+
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+
+    cell.colSpan = 7;
+    cell.textContent = "Unable to load loans. Please retry.";
+
+    showLoanMessage(error.message, true);
+  }
+}
+
+
+function formatLoanDate(value) {
+  if (!value) return "—";
+
+  // SQLite may return a UTC datetime without a timezone suffix.
+  const normalized = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value)
+    ? value
+    : `${value}Z`;
+
+  const date = new Date(normalized);
+
+  return Number.isNaN(date.getTime())
+    ? "Invalid date"
+    : date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      });
+}
+
+
+function renderActiveLoans(loans, memberMap, bookMap) {
+  const tbody = document.getElementById("active-loans-body");
+
+  tbody.replaceChildren();
+
+  if (loans.length === 0) {
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+
+    cell.colSpan = 7;
+    cell.textContent = "No active loans yet.";
+    return;
+  }
+
+  loans.forEach(loan => {
+    const row = tbody.insertRow();
+
+    const memberName =
+      memberMap.get(loan.member_id) ?? `Member #${loan.member_id}`;
+
+    const bookTitle =
+      bookMap.get(loan.book_id) ?? `Book #${loan.book_id}`;
+
+    const isOverdue =
+      new Date(
+        /(?:Z|[+-]\d{2}:\d{2})$/i.test(loan.due_at)
+          ? loan.due_at
+          : `${loan.due_at}Z`
+      ) < new Date();
+
+    const values = [
+      loan.id,
+      memberName,
+      bookTitle,
+      formatLoanDate(loan.borrowed_at),
+      formatLoanDate(loan.due_at),
+      isOverdue ? "Overdue" : "Borrowed"
+    ];
+
+    values.forEach(value => {
+      const cell = row.insertCell();
+      cell.textContent = String(value);
+    });
+
+    const actionCell = row.insertCell();
+
+    const returnButton = document.createElement("button");
+    returnButton.type = "button";
+    returnButton.className = "loan-return-btn";
+    returnButton.textContent = "Return";
+
+    returnButton.addEventListener("click", () => {
+      handleReturnLoan(loan.id, bookTitle, returnButton);
+    });
+
+    actionCell.appendChild(returnButton);
+  });
+}
+
+
+async function handleReturnLoan(
+  loanId,
+  bookTitle,
+  returnButton
+) {
+  const confirmed = window.confirm(
+    `Are you sure you want to return "${bookTitle}"?`
+  );
+
+  if (!confirmed) return;
+
+  returnButton.disabled = true;
+  returnButton.textContent = "Returning...";
+
+  try {
+    const response = await fetch(
+      `/api/v1/loans/${loanId}/return`,
+      {
+        method: "PATCH"
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        typeof result.detail === "string"
+          ? result.detail
+          : "Failed to return book"
+      );
+    }
+
+    showLoanMessage(
+      `Loan #${loanId} returned successfully!`
+    );
+
+    await Promise.all([
+      loadActiveLoans(),
+      loadLoanBooks(),
+      loadBooks(),
+      laodLoanHistory()
+    ]);
+
+  } catch (error) {
+    console.error("Return failed:", error);
+    showLoanMessage(error.message, true);
+
+  } finally {
+    returnButton.disabled = false;
+    returnButton.textContent = "Return";
+  }
+}
+
+
+async function loadLoanHistory() {
+  const [loansResponse, membersResponse, booksResponse] =
+    await Promise.all([
+      fetch("/api/v1/loans"),
+      fetch("/api/v1/members"),
+      fetch("/api/v1/books")
+    ]);
+
+  if (
+    !loansResponse.ok ||
+    !membersResponse.ok ||
+    !booksResponse.ok
+  ) {
+    throw new Error("Unable to load borrowing history");
+  }
+
+  const [loans, members, books] = await Promise.all([
+    loansResponse.json(),
+    membersResponse.json(),
+    booksResponse.json()
+  ]);
+
+  const memberMap = new Map(
+    members.map(member => [member.id, member.full_name])
+  );
+
+  const bookMap = new Map(
+    books.map(book => [book.id, book.title])
+  );
+
+  allLoanHistory = loans.map(loan => ({
+    ...loan,
+    memberName:
+      memberMap.get(loan.member_id) ?? `Member #${loan.member_id}`,
+    bookTitle:
+      bookMap.get(loan.book_id) ?? `Book #${loan.book_id}`
+  }));
+
+  filterLoanHistory();
+}
+
+function getLoanDisplayStatus(loan) {
+  if (loan.status === "returned") {
+    return "returned";
+  }
+
+  const dueValue = loan.due_at;
+
+  const normalized =
+    /(?:Z|[+-]\d{2}:\d{2})$/i.test(dueValue)
+      ? dueValue
+      : `${dueValue}Z`;
+
+  const dueDate = new Date(normalized);
+
+  if (
+    loan.status === "borrowed" &&
+    !Number.isNaN(dueDate.getTime()) &&
+    dueDate < new Date()
+  ) {
+    return "overdue";
+  }
+
+  return "borrowed";
+}
+
+
+function renderLoanHistory(loans) {
+  const tbody = document.getElementById("loan-history-body");
+
+  if (!tbody) return;
+
+  tbody.replaceChildren();
+
+  if (loans.length === 0) {
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+
+    cell.colSpan = 7;
+    cell.textContent = "No matching loan records found.";
+    return;
+  }
+
+  loans.forEach(loan => {
+    const row = tbody.insertRow();
+
+    const displayStatus = getLoanDisplayStatus(loan);
+
+    const values = [
+      loan.id,
+      loan.memberName,
+      loan.bookTitle,
+      formatLoanDate(loan.borrowed_at),
+      formatLoanDate(loan.due_at),
+      loan.returned_at
+        ? formatLoanDate(loan.returned_at)
+        : "—"
+    ];
+
+    values.forEach(value => {
+      const cell = row.insertCell();
+      cell.textContent = String(value);
+    });
+
+    const statusCell = row.insertCell();
+
+    const badge = document.createElement("span");
+    badge.className = `loan-status ${displayStatus}`;
+    badge.textContent =
+      displayStatus.charAt(0).toUpperCase() +
+      displayStatus.slice(1);
+
+    statusCell.appendChild(badge);
+  });
+}
+
+function filterLoanHistory() {
+  const searchInput = document.getElementById("loan-search");
+  const statusFilter = document.getElementById(
+    "loan-status-filter"
+  )
+
+  if (!searchInput || !statusFilter) return;
+
+  const searchText = searchInput.value.trim().toLowerCase();
+  const selectedStatus = statusFilter.value;
+
+
+
+  const filteredLoans = allLoanHistory.filter(loan => {
+    const displayStatus = getLoanDisplayStatus(loan);
+
+    const matchesSearch =
+      loan.memberName.toLowerCase().includes(searchText) ||
+      loan.bookTitle.toLowerCase().includes(searchText) ||
+      String(loan.id).includes(searchText) ||
+      String(loan.member_id).includes(searchText);
+
+
+    const matchesStatus =
+      selectedStatus === "all" ||
+      displayStatus === selectedStatus;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  console.log("Filtering loans:", {
+    searchText,
+    selectedStatus,
+    total: allLoanHistory.length,
+    matched: filteredLoans.length
+  });
+
+  document.getElementById("loan-history-count").textContent =
+    filteredLoans.length;
+
+  renderLoanHistory(filteredLoans);
+
+}
+
+function initializeLoanHistory() {
+  const searchInput = document.getElementById("loan-search");
+  const statusFilter = document.getElementById(
+    "loan-status-filter"
+  );
+
+  if (!searchInput || !statusFilter) {
+    console.error("Loan history filter elements not found");
+    return;
+  }
+  //Filter Whenever the user types
+  searchInput.addEventListener("input", filterLoanHistory);
+
+  //Filter whenever the selected status changes
+  statusFilter.addEventListener("change", filterLoanHistory);
+
+  console.log("Loan history filters initialized successfully");
+}
 
 loadBooks();
 loadMembers();
+initializeLoanManagement();

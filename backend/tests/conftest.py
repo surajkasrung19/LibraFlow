@@ -1,41 +1,56 @@
 import pytest
 
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool 
+from sqlalchemy.pool import StaticPool
 
-from app.db.base import Base
-from app.db.session import get_db 
 from app.main import app
+from app.db.base import Base
+from app.db.session import get_db
 
-#Register all mapped models
+# Import models so SQLAlchemy registers their tables.
 from app.models.book import Book
+from app.models.member import Member
+from app.models.loan import Loan
 
 
 @pytest.fixture
-def client():
-    test_engine = create_engine(
+def db_session():
+    engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
-        poolclass=StaticPool
+        poolclass=StaticPool,
     )
 
-    Base.metadata.create_all(bind=test_engine)
+    @event.listens_for(engine, "connect")
+    def enable_foreign_keys(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    Base.metadata.create_all(bind=engine)
 
     TestingSessionLocal = sessionmaker(
-        bind=test_engine,
+        bind=engine,
         autoflush=False,
-        expire_on_commit=False
+        expire_on_commit=False,
     )
 
-    def override_get_db():
-        db = TestingSessionLocal()
+    db = TestingSessionLocal()
 
-        try:
-            yield db
-        finally:
-            db.close()
+    try:
+        yield db
+    finally:
+        db.close()
+        Base.metadata.drop_all(bind=engine)
+        engine.dispose()
+
+
+@pytest.fixture
+def client(db_session):
+    def override_get_db():
+        yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
 
@@ -43,8 +58,4 @@ def client():
         with TestClient(app) as test_client:
             yield test_client
     finally:
-        app.dependency_overrides.clear()
-        Base.metadata.drop_all(bind=test_engine)
-        test_engine.dispose()
-
-        
+        app.dependency_overrides.pop(get_db, None)
