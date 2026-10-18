@@ -73,3 +73,9 @@ class Loan(Base):
         default="borrowed",
         server_default="borrowed"
     )
+
+    renewal_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0")

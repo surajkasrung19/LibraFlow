@@ -27,6 +27,59 @@ LibraFlow is a full-stack library management application built with Python, Fast
 - Identify overdue loans
 - Search and filter borrowing history
 
+### Library Circulation Policies
+
+LibraFlow includes configurable rules for borrowing and renewing library books.
+
+**Borrowing limits**
+
+- Members have a configurable maximum number of simultaneous active loans.
+
+- Returned books no longer count toward the active borrowing limit.
+
+- Borrowing requests that exceed the limit are rejected.
+
+**Overdue restrictions**
+
+- Members with overdue loans cannot borrow additional books.
+
+- Returning overdue books removes the restriction when no other overdue loans remain.
+
+- Overdue status is derived from the loan's status and due date.
+
+**Loan renewals**
+
+- Eligible active loans can be renewed to extend their due date.
+
+- Renewal limits are configurable.
+
+- Returned and overdue loans cannot be renewed.
+
+- Renewing a loan does not alter book inventory.
+
+## Library Policy Configuration
+
+The backend uses Pydantic Settings and supports these environment variables:
+
+**Environment variable         Default   Description**
+______________________________________________________________________________________
+LIBRAFLOW_MAX_ACTIVE_LOANS     3         Maximum simultaneous active loans per member
+______________________________________________________________________________________
+LIBRAFLOW_LOAN_PERIOD_DAYS     14        Loan period and renewal extension in days
+______________________________________________________________________________________
+LIBRAFLOW_MAX_LOAN_RENEWALS    1         Maximum renewals allowed per loan
+
+- Restart the application after changing environment variables.
+
+**Renewal API**
+
+- PATCH /api/v1/loans/{loan_id}/renew
+
+- Extends the due date of an eligible active loan and increments its renewal count.
+
+- The endpoint returns an updated loan record. Business-rule violations return an HTTP conflict response.
+
+
 ### Backend Architecture
 
 The backend follows a modular structure:

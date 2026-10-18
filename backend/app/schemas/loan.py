@@ -18,3 +18,4 @@ class LoanResponse(BaseModel):
     returned_at: datetime | None
 
     status: str
+    renewal_count: int
