@@ -55,7 +55,7 @@ let allBooks = [];
 let allMembers = [];
 
 let allLoanHistory = [];
-
+const MAX_LOAN_RENEWALS = 1;
 
 
 async function loadBooks() {
@@ -976,9 +976,10 @@ function formatLoanDate(value) {
       });
 }
 
-
 function renderActiveLoans(loans, memberMap, bookMap) {
   const tbody = document.getElementById("active-loans-body");
+
+  if (!tbody) return;
 
   tbody.replaceChildren();
 
@@ -986,7 +987,7 @@ function renderActiveLoans(loans, memberMap, bookMap) {
     const row = tbody.insertRow();
     const cell = row.insertCell();
 
-    cell.colSpan = 7;
+    cell.colSpan = 8;
     cell.textContent = "No active loans yet.";
     return;
   }
@@ -1000,12 +1001,7 @@ function renderActiveLoans(loans, memberMap, bookMap) {
     const bookTitle =
       bookMap.get(loan.book_id) ?? `Book #${loan.book_id}`;
 
-    const isOverdue =
-      new Date(
-        /(?:Z|[+-]\d{2}:\d{2})$/i.test(loan.due_at)
-          ? loan.due_at
-          : `${loan.due_at}Z`
-      ) < new Date();
+    const displayStatus = getLoanDisplayStatus(loan);
 
     const values = [
       loan.id,
@@ -1013,7 +1009,8 @@ function renderActiveLoans(loans, memberMap, bookMap) {
       bookTitle,
       formatLoanDate(loan.borrowed_at),
       formatLoanDate(loan.due_at),
-      isOverdue ? "Overdue" : "Borrowed"
+      `${loan.renewal_count ?? 0} / ${MAX_LOAN_RENEWALS}`,
+      displayStatus === "overdue" ? "Overdue" : "Borrowed"
     ];
 
     values.forEach(value => {
@@ -1023,7 +1020,29 @@ function renderActiveLoans(loans, memberMap, bookMap) {
 
     const actionCell = row.insertCell();
 
+    const actionWrapper = document.createElement("div");
+    actionWrapper.className = "loan-actions";
+
+    // Renew button
+    const renewButton = document.createElement("button");
+
+    renewButton.type = "button";
+    renewButton.className = "loan-renew-btn";
+    renewButton.textContent = "Renew";
+
+    renewButton.disabled = !canRenewLoan(loan);
+
+    if (!canRenewLoan(loan)) {
+      renewButton.title = getRenewalMessage(loan);
+    }
+
+    renewButton.addEventListener("click", () => {
+      handleRenewLoan(loan.id, bookTitle, renewButton);
+    });
+
+    // Return button
     const returnButton = document.createElement("button");
+
     returnButton.type = "button";
     returnButton.className = "loan-return-btn";
     returnButton.textContent = "Return";
@@ -1032,7 +1051,27 @@ function renderActiveLoans(loans, memberMap, bookMap) {
       handleReturnLoan(loan.id, bookTitle, returnButton);
     });
 
-    actionCell.appendChild(returnButton);
+
+    //Create newwal eligibility message
+    const renewalMessage = document.createElement("span");
+
+    renewalMessage.className = "renewal-message";
+    renewalMessage.textContent = getRenewalMessage(loan);
+
+    //Apply a visual status
+    if (getLoanDisplayStatus(loan) === "overdue") {
+      renewalMessage.classList.add("renewal-overdue");
+    } else if (canRenewLoan(loan)) {
+      renewalMessage.classList.add("renewal-eligible");
+    } else {
+      renewalMessage.classList.add("renewal-unavailable");
+    }
+
+    actionWrapper.appendChild(renewButton);
+    actionWrapper.appendChild(returnButton);
+    actionWrapper.appendChild(renewalMessage);
+
+    actionCell.appendChild(actionWrapper);
   });
 }
 
@@ -1077,7 +1116,7 @@ async function handleReturnLoan(
       loadActiveLoans(),
       loadLoanBooks(),
       loadBooks(),
-      laodLoanHistory()
+      loadLoanHistory()
     ]);
 
   } catch (error) {
@@ -1187,7 +1226,8 @@ function renderLoanHistory(loans) {
       formatLoanDate(loan.due_at),
       loan.returned_at
         ? formatLoanDate(loan.returned_at)
-        : "—"
+        : "—",
+        `${loan.renewal_count ?? 0} / ${MAX_LOAN_RENEWALS}`
     ];
 
     values.forEach(value => {
@@ -1269,6 +1309,99 @@ function initializeLoanHistory() {
 
   console.log("Loan history filters initialized successfully");
 }
+
+function canRenewLoan(loan) {
+  const displayStatus = getLoanDisplayStatus(loan);
+
+  return (
+    loan.status === "borrowed" &&
+    displayStatus !== "overdue" &&
+    (loan.renewal_count ?? 0) < MAX_LOAN_RENEWALS
+  );
+}
+
+async function handleRenewLoan(
+  loanId,
+  bookTitle,
+  renewButton
+) {
+  const confirmed = window.confirm(
+    `Renew "${bookTitle}" for another loan period?`
+  );
+
+  if (!confirmed) return;
+
+  renewButton.disabled = true;
+  renewButton.textContent = "Renewing...";
+
+  try {
+    const response = await fetch(
+      `/api/v1/loans/${loanId}/renew`,
+      {
+        method: "PATCH"
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        typeof result.detail === "string"
+          ? result.detail
+          : "Failed to renew loan"
+      );
+    }
+
+    showLoanMessage(
+      `Loan #${loanId} renewed successfully! ` +
+      `New due date: ${formatLoanDate(result.due_at)}`
+    );
+
+    await Promise.all([
+      loadActiveLoans(),
+      loadLoanHistory()
+    ]);
+
+  } catch (error) {
+    console.error("Loan renewal failed:", error);
+
+    showLoanMessage(error.message, true);
+
+    // Reload because the server may have newer policy or loan data.
+    try {
+      await Promise.all([
+        loadActiveLoans(),
+        loadLoanHistory()
+      ]);
+    } catch (refreshError) {
+      console.error("Could not refresh loan data:", refreshError);
+    }
+
+  } finally {
+    renewButton.disabled = false;
+    renewButton.textContent = "Renew";
+  }
+}
+
+function getRenewalMessage(loan) {
+  const displayStatus = getLoanDisplayStatus(loan);
+
+  if (loan.status === "returned") {
+    return "Loan already returned"
+  }
+
+  if (displayStatus === "overdue") {
+    return "Overdue - return required";
+  }
+
+  if ((loan.renewal_count ?? 0) >= MAX_LOAN_RENEWALS) {
+    return "Renewal limit reached"
+  }
+
+  return "Eligible for renewal";
+
+}
+
 
 loadBooks();
 loadMembers();

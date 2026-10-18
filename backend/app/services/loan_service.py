@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.models.book import Book
@@ -8,11 +8,16 @@ from app.models.member import Member
 from app.models.loan import Loan
 from app.schemas.loan import LoanCreate
 from app.services.exceptions import LoanError
-
+from app.core.config import Settings, settings
 
 class LoanService:
-    def __init__(self, db: Session):
+    def __init__(
+            self,
+            db: Session,
+            config: Settings | None = None
+            ):
         self.db = db
+        self.config = config if config is not None else settings
 
     def create_loan(self, loan_data: LoanCreate) -> Loan:
         member = self.db.get(Member, loan_data.member_id)
@@ -32,7 +37,28 @@ class LoanService:
             raise LoanError("Book is archived")
 
         now = datetime.now(timezone.utc)
-        due_date = now + timedelta(days=14)
+        due_date = now + timedelta(
+            days=self.config.loan_period_days
+        )
+
+        # Verify member borrowing limit
+        active_loan_count = self.count_active_loans(
+            loan_data.member_id
+        )
+
+        #Prevent borrowing when the member has overdue loans
+        if self.has_overdue_loans(loan_data.member_id):
+            raise LoanError(
+                "Borrowing blocked: member has overdue loans."
+                "Return overdue books before borrowing again."
+            )
+
+        if active_loan_count >= self.config.max_active_loans:
+            raise LoanError(
+                f"Borrowing limit reached. "
+                f"A member can borrow a maximum of "
+                f"{self.config.max_active_loans} books at a time."
+            )
 
         try:
             #Reduce inventory only when a copy is available
@@ -44,7 +70,7 @@ class LoanService:
                     Book.available_copies > 0
                 )
                 .values(
-                    available_copies=Book.available_copies -1
+                    available_copies=Book.available_copies - 1
                 )
                 .execution_options(synchronize_session=False)
             )
@@ -161,3 +187,87 @@ class LoanService:
         )
 
         return list(self.db.scalars(statement).all())
+
+
+    def count_active_loans(self, member_id: int) -> int:
+        statement = (
+            select(func.count(Loan.id))
+            .where(
+                Loan.member_id == member_id,
+                Loan.status == "borrowed"
+            )
+        )
+
+        return self.db.scalar(statement) or 0
+
+
+    def has_overdue_loans(self, member_id: int) -> bool:
+        now = datetime.now(timezone.utc)
+
+        statement = (
+            select(Loan.id)
+            .where(
+                Loan.member_id == member_id,
+                Loan.status == "borrowed",
+                Loan.due_at < now
+            )
+            .limit(1)
+        )
+
+        return self.db.scalar(statement) is not None
+
+
+    def renew_loan(self, loan_id: int) -> Loan:
+        loan = self.db.get(Loan, loan_id)
+
+        if loan is None:
+            raise LoanError("Loan not found")
+
+        if loan.status != "borrowed":
+            raise LoanError("Only borrowed loans can be renewed")
+
+        now = datetime.now(timezone.utc)
+
+        # SQLite may return a timezone-naive datetime.
+        due_at = loan.due_at
+
+        if due_at.tzinfo is None:
+            due_at = due_at.replace(tzinfo=timezone.utc)
+
+        if due_at < now:
+            raise LoanError("Overdue loans cannot be renewed")
+
+        if loan.renewal_count >= self.config.max_loan_renewals:
+            raise LoanError("Loan renewal limit reached")
+
+        new_due_at = due_at + timedelta(
+            days=self.config.loan_period_days
+        )
+
+        try:
+            result = self.db.execute(
+                update(Loan)
+                .where(
+                    Loan.id == loan_id,
+                    Loan.status == "borrowed",
+                    Loan.due_at >= now.replace(tzinfo=None),
+                    Loan.renewal_count < self.config.max_loan_renewals
+                )
+                .values(
+                    due_at=new_due_at,
+                    renewal_count=Loan.renewal_count + 1
+                )
+                .execution_options(synchronize_session=False)
+            )
+
+            if result.rowcount != 1:
+                raise LoanError("Loan is not eligible for renewal")
+
+            self.db.commit()
+            self.db.expire_all()
+
+            return self.db.get(Loan, loan_id)
+
+        except Exception:
+            self.db.rollback()
+            raise

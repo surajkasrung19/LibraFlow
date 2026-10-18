@@ -118,3 +118,31 @@ def get_loan(
         )
 
     return loan
+
+
+@router.patch(
+    "/{loan_id}/renew",
+    response_model=LoanResponse
+)
+def renew_book_loan(
+    loan_id: int,
+    db: Session = Depends(get_db)
+):
+    service = LoanService(db)
+
+    try:
+        return service.renew_loan(loan_id)
+
+    except LoanError as exc:
+        message = str(exc)
+
+        error_status = (
+            status.HTTP_404_NOT_FOUND
+            if message == "Loan not found"
+            else status.HTTP_409_CONFLICT
+        )
+
+        raise HTTPException(
+            status_code=error_status,
+            detail=message
+        ) from exc
