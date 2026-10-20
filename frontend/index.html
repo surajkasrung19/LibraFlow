@@ -242,8 +242,8 @@
           <div class="loan-history-card">
             <div class="loan-history-header">
               <div>
-                <h3>Borrowing History
-                  (<span id="loan-history-count">0</span>)
+                <h3>
+                  Borrowing History (<span id="loan-history-count">0</span>)
                 </h3>
                 <p>View all borrowed and returned books.</p>
               </div>
@@ -287,6 +287,135 @@
                 <tbody id="loan-history-body">
                   <tr>
                     <td colspan="8">Loading loan history...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="analytics-section" class="analytics-section">
+          <div class="analytics-heading">
+            <div>
+              <h2>Library Analytics</h2>
+              <p>Explore library activity and circulation statistics.</p>
+            </div>
+
+            <button
+              type="button"
+              id="refresh-analytics-btn"
+              class="analytics-refresh-btn"
+            >
+              Refresh Reports
+            </button>
+          </div>
+
+          <div class="analytics-report-panel">
+            <div class="analytics-report-heading">
+              <h3>Most Borrowed Books</h3>
+              <p>Books ranked by total borrowing transactions.</p>
+            </div>
+
+            <div id="most-borrowed-chart" class="analytics-bar-chart">
+              <p>Loading popular books...</p>
+            </div>
+          </div>
+
+          <p id="analytics-message" role="status" aria-live="polite"></p>
+
+          <div class="analytics-metrics">
+            <article class="analytics-card">
+              <h3>Book Titles</h3>
+              <strong id="metric-book-titles">—</strong>
+            </article>
+
+            <article class="analytics-card">
+              <h3>Total Copies</h3>
+              <strong id="metric-total-copies">—</strong>
+            </article>
+
+            <article class="analytics-card">
+              <h3>Available Copies</h3>
+              <strong id="metric-available-copies">—</strong>
+            </article>
+
+            <article class="analytics-card">
+              <h3>Borrowed Copies</h3>
+              <strong id="metric-borrowed-copies">—</strong>
+            </article>
+
+            <article class="analytics-card">
+              <h3>Active Members</h3>
+              <strong id="metric-active-members">—</strong>
+            </article>
+
+            <article class="analytics-card">
+              <h3>Overdue Loans</h3>
+              <strong id="metric-overdue-loans">—</strong>
+            </article>
+          </div>
+
+          <div class="analytics-report-panel">
+            <div class="analytics-report-heading">
+              <h3>Top Library Members</h3>
+              <p>Members ranked by total borrowing activity.</p>
+            </div>
+
+            <div class="analytics-table-wrapper">
+              <table class="analytics-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Member</th>
+                    <th>Total Loans</th>
+                    <th>Active Loans</th>
+                    <th>Returned Loans</th>
+                  </tr>
+                </thead>
+
+                <tbody id="top-members-body">
+                  <tr>
+                    <td colspan="5">Loading member analytics...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="analytics-report-panel">
+            <div class="analytics-report-heading overdue-report-heading">
+              <div>
+                <h3>Overdue Loans</h3>
+                <p>Monitor overdue books and borrowing risk.</p>
+              </div>
+
+              <div>
+                <label for="overdue-min-days"> Minimum Days Overdue </label>
+
+                <select id="overdue-min-days">
+                  <option value="0">All overdue loans</option>
+                  <option value="7">7+ days overdue</option>
+                  <option value="15">15+ days overdue</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="analytics-table-wrapper">
+              <table class="analytics-table">
+                <thead>
+                  <tr>
+                    <th>Loan ID</th>
+                    <th>Member</th>
+                    <th>Book</th>
+                    <th>Due Date</th>
+                    <th>Days Overdue</th>
+                    <th>Priority</th>
+                  </tr>
+                </thead>
+
+                <tbody id="overdue-loans-body">
+                  <tr>
+                    <td colspan="6">Loading overdue loans...</td>
                   </tr>
                 </tbody>
               </table>

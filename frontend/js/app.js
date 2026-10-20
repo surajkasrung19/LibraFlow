@@ -1403,6 +1403,381 @@ function getRenewalMessage(loan) {
 }
 
 
+async function loadLibraryOverview() {
+  const message = document.getElementById("analytics-message");
+  const refreshButton = document.getElementById(
+    "refresh-analytics-btn"
+  );
+
+  if (!message || !refreshButton) return;
+
+  refreshButton.disabled = true;
+  message.textContent = "Loading library analytics...";
+
+  const metricElements = {
+    total_book_titles: "metric-book-titles",
+    total_book_copies: "metric-total-copies",
+    available_book_copies: "metric-available-copies",
+    borrowed_book_copies: "metric-borrowed-copies",
+    active_members: "metric-active-members",
+    overdue_loans: "metric-overdue-loans"
+  };
+
+  try {
+    const response = await fetch("/api/v1/reports/overview");
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to load reports (HTTP ${response.status})`
+      );
+    }
+
+    const data = await response.json();
+
+    Object.entries(metricElements).forEach(([field, elementId]) => {
+      const element = document.getElementById(elementId);
+
+      if (element) {
+        element.textContent = String(data[field] ?? 0);
+      }
+    });
+
+    message.textContent = "Analytics updated successfully.";
+
+  } catch (error) {
+    console.error("Library analytics error:", error);
+    message.textContent = error.message;
+
+  } finally {
+    refreshButton.disabled = false;
+  }
+}
+
+
+async function loadMostBorrowedBooks() {
+  const container = document.getElementById(
+    "most-borrowed-chart"
+  );
+
+  if (!container) return;
+
+  container.textContent = "Loading popular books...";
+
+  try {
+    const response = await fetch(
+      "/api/v1/reports/most-borrowed-books?limit=5"
+    );
+
+    if (!response.ok) {
+      throw new Error("Unable to load popular books");
+    }
+
+    const books = await response.json();
+
+    renderMostBorrowedBooks(books);
+
+  } catch (error) {
+    console.error("Most borrowed books error:", error);
+    container.textContent = error.message;
+  }
+}
+
+
+function renderMostBorrowedBooks(books) {
+  const container = document.getElementById(
+    "most-borrowed-chart"
+  );
+
+  container.replaceChildren();
+
+  if (books.length === 0) {
+    container.textContent = "No borrowing history yet.";
+    return;
+  }
+
+  const maxCount = Math.max(
+    ...books.map(book => book.borrow_count),
+    1
+  );
+
+  books.forEach((book, index) => {
+    const item = document.createElement("div");
+
+    const label = document.createElement("div");
+    label.className = "analytics-bar-label";
+
+    const title = document.createElement("span");
+    title.textContent = `${index + 1}. ${book.title}`;
+
+    const count = document.createElement("strong");
+    count.textContent = `${book.borrow_count} loans`;
+
+    label.append(title, count);
+
+    const track = document.createElement("div");
+    track.className = "analytics-bar-track";
+
+    const fill = document.createElement("div");
+    fill.className = "analytics-bar-fill";
+
+    fill.style.width = `${
+      (book.borrow_count / maxCount) * 100
+    }%`;
+
+    track.appendChild(fill);
+    item.append(label, track);
+    container.appendChild(item);
+  });
+}
+
+
+async function loadTopMembers() {
+  const tbody = document.getElementById(
+    "top-members-body"
+  );
+
+  if (!tbody) return;
+
+  tbody.replaceChildren();
+
+  const loadingRow = tbody.insertRow();
+  const loadingCell = loadingRow.insertCell();
+
+  loadingCell.colSpan = 5;
+  loadingCell.textContent = "Loading top members...";
+
+  try {
+    const response = await fetch(
+      "/api/v1/reports/top-members?limit=5"
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to load top members (HTTP ${response.status})`
+      );
+    }
+
+    const members = await response.json();
+
+    if (!Array.isArray(members)) {
+      throw new Error("Invalid member analytics response");
+    }
+
+    renderTopMembers(members);
+
+  } catch (error) {
+    console.error("Top members report error:", error);
+
+    tbody.replaceChildren();
+
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+
+    cell.colSpan = 5;
+    cell.textContent = "Unable to load member analytics.";
+  }
+}
+
+
+function renderTopMembers(members) {
+  const tbody = document.getElementById(
+    "top-members-body"
+  );
+
+  if (!tbody) return;
+
+  tbody.replaceChildren();
+
+  // Handle members with no borrowing history.
+  if (members.length === 0) {
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+
+    cell.colSpan = 5;
+    cell.textContent = "No member borrowing activity yet.";
+
+    return;
+  }
+
+  members.forEach((member, index) => {
+    const row = tbody.insertRow();
+
+    const values = [
+      index + 1,
+      member.full_name,
+      member.total_loans,
+      member.active_loans,
+      member.returned_loans
+    ];
+
+    values.forEach(value => {
+      const cell = row.insertCell();
+      cell.textContent = String(value);
+    });
+
+    //Highlight the top borrower.
+    if (index ===  0 && member.total_loans > 0) {
+      const memberCell = row.cells[1]
+
+
+    const badge = document.createElement("span");
+
+    badge.className = "top-borrower-badge";
+    badge.textContent = "🏆 Top Borrower";
+
+    memberCell.appendChild(badge);
+    }
+  });
+}
+
+
+async function loadOverdueLoans() {
+  const tbody = document.getElementById(
+    "overdue-loans-body"
+  );
+
+  const filter = document.getElementById(
+    "overdue-min-days"
+  );
+
+  if (!tbody || !filter) return;
+
+  tbody.replaceChildren();
+
+  const loadingRow = tbody.insertRow();
+  const loadingCell = loadingRow.insertCell();
+
+  loadingCell.colSpan = 6;
+  loadingCell.textContent = "Loading overdue loans...";
+
+  const minDays = Number(filter.value);
+
+  try {
+    const response = await fetch(
+      `/api/v1/reports/overdue-loans?min_days_overdue=${minDays}`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to load overdue loans (HTTP ${response.status})`
+      );
+    }
+
+    const loans = await response.json();
+
+    if (!Array.isArray(loans)) {
+      throw new Error("Invalid overdue report response");
+    }
+
+    renderOverdueLoans(loans);
+
+  } catch (error) {
+    console.error("Overdue analytics error:", error);
+
+    tbody.replaceChildren();
+
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+
+    cell.colSpan = 6;
+    cell.textContent = "Unable to load overdue loans.";
+  }
+}
+
+
+function renderOverdueLoans(loans) {
+  const tbody = document.getElementById(
+    "overdue-loans-body"
+  );
+
+  if (!tbody) return;
+
+  tbody.replaceChildren();
+
+  if (loans.length === 0) {
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+
+    cell.colSpan = 6;
+    cell.textContent = "No overdue loans found.";
+    return;
+  }
+
+  loans.forEach(loan => {
+    const row = tbody.insertRow();
+
+    const values = [
+      loan.loan_id,
+      loan.member_name,
+      loan.book_title,
+      formatLoanDate(loan.due_at),
+      loan.days_overdue
+    ];
+
+    values.forEach(value => {
+      const cell = row.insertCell();
+      cell.textContent = String(value);
+    });
+
+    // Display a visual priority indicator.
+    const priorityCell = row.insertCell();
+
+    const badge = document.createElement("span");
+
+    badge.className =
+      `overdue-priority overdue-priority--${loan.priority}`;
+
+    badge.textContent =
+      loan.priority.charAt(0).toUpperCase() +
+      loan.priority.slice(1);
+
+    priorityCell.appendChild(badge);
+  });
+}
+
+
+function initializeAnalytics() {
+  const refreshButton = document.getElementById(
+    "refresh-analytics-btn"
+  );
+
+  const overdueFilter = document.getElementById(
+    "overdue-min-days"
+  );
+
+  if (!refreshButton) {
+    console.warn("Analytics refresh button not found");
+    return;
+  }
+
+  async function refreshAllAnalytics() {
+    await Promise.all([
+      loadLibraryOverview(),
+      loadMostBorrowedBooks(),
+      loadTopMembers(),
+      loadOverdueLoans()
+    ]);
+  }
+
+  refreshButton.addEventListener(
+    "click",
+    refreshAllAnalytics
+  );
+
+  if (overdueFilter) {
+    overdueFilter.addEventListener(
+      "change",
+      loadOverdueLoans
+    );
+  }
+
+  // Initial dashboard load.
+  refreshAllAnalytics();
+}
+
+// ===== APPLICATION INITIALIZATION =====
+
 loadBooks();
 loadMembers();
 initializeLoanManagement();
+initializeAnalytics();
