@@ -52,5 +52,3 @@ class OverdueLoanResponse(BaseModel):
     due_at: datetime
     days_overdue: int = Field(ge=0)
     priority: str
-
-

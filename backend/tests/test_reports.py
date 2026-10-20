@@ -620,5 +620,3 @@ def test_overdue_loans_reject_negative_minimum(client):
     )
 
     assert response.status_code == 422
-
-
