@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from app.api import general, info, books, members, loans
+from app.api import general, info, books, members, loans, reports
 
 
 app = FastAPI(
@@ -17,6 +17,7 @@ app.include_router(info.router)
 app.include_router(books.router)
 app.include_router(members.router)
 app.include_router(loans.router)
+app.include_router(reports.router)
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
