@@ -17,3 +17,11 @@ class DuplicateMemberError(Exception):
 class LoanError(Exception):
     def __init__(self, message: str):
         super().__init__(message)
+
+class LoanConflictError(LoanError):
+    """Raised when a loan operation violates business rules."""
+    pass
+
+class LoanNotFoundError(LoanError):
+    """Raised when a requested loan does not exist."""
+    pass

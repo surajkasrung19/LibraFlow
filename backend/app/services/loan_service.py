@@ -7,8 +7,9 @@ from app.models.book import Book
 from app.models.member import Member
 from app.models.loan import Loan
 from app.schemas.loan import LoanCreate
-from app.services.exceptions import LoanError
+from app.services.exceptions import LoanError, LoanNotFoundError, LoanConflictError
 from app.core.config import Settings, settings
+
 
 class LoanService:
     def __init__(
@@ -221,10 +222,10 @@ class LoanService:
         loan = self.db.get(Loan, loan_id)
 
         if loan is None:
-            raise LoanError("Loan not found")
+            raise LoanNotFoundError("Loan not found")
 
         if loan.status != "borrowed":
-            raise LoanError("Only borrowed loans can be renewed")
+            raise LoanConflictError("Only borrowed loans can be renewed")
 
         now = datetime.now(timezone.utc)
 
@@ -235,10 +236,10 @@ class LoanService:
             due_at = due_at.replace(tzinfo=timezone.utc)
 
         if due_at < now:
-            raise LoanError("Overdue loans cannot be renewed")
+            raise LoanConflictError("Overdue loans cannot be renewed")
 
         if loan.renewal_count >= self.config.max_loan_renewals:
-            raise LoanError("Loan renewal limit reached")
+            raise LoanConflictError("Loan renewal limit reached")
 
         new_due_at = due_at + timedelta(
             days=self.config.loan_period_days
@@ -261,7 +262,7 @@ class LoanService:
             )
 
             if result.rowcount != 1:
-                raise LoanError("Loan is not eligible for renewal")
+                raise LoanConflictError("Loan is not eligible for renewal")
 
             self.db.commit()
             self.db.expire_all()

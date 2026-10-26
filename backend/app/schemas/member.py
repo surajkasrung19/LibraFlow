@@ -29,20 +29,28 @@ class MemberBase(BaseModel):
             raise ValueError("Full name must be a string")
 
         return normalize_full_name(value)
-    
+
+    @field_validator("full_name", mode="before")
+    @classmethod
+    def strip_member_name(cls, value):
+        if isinstance(value, str):
+            return value.strip()
+
+        return value
+
 
     @field_validator("email")
     @classmethod
     def validate_email(cls, value):
         return normalize_email(value)
-    
+
 
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, value):
         return normalize_phone(value)
 
-    
+
 def normalize_full_name(value: str) -> str:
     name = " ".join(value.split())
 
@@ -76,7 +84,7 @@ def normalize_phone(value: str | None) -> str | None:
         raise ValueError("Phone number must contain 7 to 15 digits")
 
     return phone
-    
+
 
 
 class MemberCreate(MemberBase):

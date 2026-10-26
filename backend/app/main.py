@@ -4,13 +4,19 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from app.api import general, info, books, members, loans, reports
-
+from app.core.middleware import request_logging_middleware
+from app.core.exception_handlers import register_exception_handlers
+from app.core.security import security_headers_middleware
 
 app = FastAPI(
     title="LibraFlow API",
     description="REST API for library Management System",
     version="1.0.0"
 )
+register_exception_handlers(app)
+app.middleware("http")(request_logging_middleware)
+app.middleware("http")(security_headers_middleware)
+
 
 app.include_router(general.router)
 app.include_router(info.router)

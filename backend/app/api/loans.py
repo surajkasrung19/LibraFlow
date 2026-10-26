@@ -130,19 +130,4 @@ def renew_book_loan(
 ):
     service = LoanService(db)
 
-    try:
-        return service.renew_loan(loan_id)
-
-    except LoanError as exc:
-        message = str(exc)
-
-        error_status = (
-            status.HTTP_404_NOT_FOUND
-            if message == "Loan not found"
-            else status.HTTP_409_CONFLICT
-        )
-
-        raise HTTPException(
-            status_code=error_status,
-            detail=message
-        ) from exc
+    return service.renew_loan(loan_id)

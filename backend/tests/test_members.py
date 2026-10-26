@@ -38,7 +38,7 @@ def test_duplicate_member_email(client):
             "email": "RAHUL@EXAMPLE.COM"
         }
     )
-    
+
     # Assert: Duplicate registration must fail
     assert second.status_code == 409
 
@@ -196,7 +196,7 @@ def test_get_nonexistent_member(client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Member not found"
-    
+
 
 def test_update_member_null_name(client):
     response = client.post(
@@ -217,3 +217,27 @@ def test_update_member_null_name(client):
     )
 
     assert update_response.status_code == 422
+
+def test_register_member_rejects_blank_name(client):
+    response = client.post(
+        "/api/v1/members",
+        json={
+            "full_name": "   ",
+            "email": "blank.member@example.com"
+        }
+    )
+
+    assert response.status_code == 422
+
+
+def test_register_member_strips_name_whitespace(client):
+    response = client.post(
+        "/api/v1/members",
+        json={
+            "full_name": "  Rahul Sharma  ",
+            "email": "rahul.validation@example.com"
+        }
+    )
+
+    assert response.status_code == 201
+    assert response.json()["full_name"] == "Rahul Sharma"
