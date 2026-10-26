@@ -1,4 +1,4 @@
-#Python virtual environment 
+#Python virtual environment
 backend/venv/
 backend/.venv
 
@@ -28,3 +28,5 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# Logs
+*.log

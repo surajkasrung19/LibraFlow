@@ -1,3 +1,8 @@
+import pytest
+from sqlalchemy.exc import IntegrityError
+
+from app.models.book import Book
+
 def test_create_book_success(client):
     payload = {
         "title": "Atomic Habits",
@@ -53,7 +58,7 @@ def test_negative_total_copies(client):
         "author": "Aditya Bhargava",
         "isbn": "9780132350888",
         "category": "Programming",
-        "total_copies": -5    
+        "total_copies": -5
     }
 
     response = client.post(
@@ -75,7 +80,7 @@ def test_get_missing_book(client):
     assert response.status_code == 404
 
     data = response.json()
-    
+
     assert data["detail"] == "Book not found"
 
 
@@ -127,7 +132,7 @@ def test_update_nonexistent_book(client):
     )
 
     assert response.status_code == 404
-    
+
     data = response.json()
 
     assert data["detail"] == "Book not found"
@@ -233,7 +238,64 @@ def test_archive_nonexistent_book(client):
     assert data["detail"] == "Book not found"
 
 
+def test_create_book_rejects_blanc_title(client):
+    response = client.post(
+        "/api/v1/books",
+        json={
+            "title": "  ",
+            "author": "Robert C. Martin",
+            "isbn": "VALIDATION-001",
+            "total_copies": 3
+        }
+    )
 
+    assert response.status_code == 422
 
+def test_create_book_strips_whitespace(client):
+    response = client.post(
+        "/api/v1/books",
+        json={
+            "title": " Clean Code",
+            "author": " Robert C. Martin ",
+            "isbn": " VALIDATION-002",
+            "total_copies": 3
+        }
+    )
 
+    assert response.status_code == 201
 
+    data = response.json()
+
+    assert data["title"] == "Clean Code"
+    assert data["author"] == "Robert C. Martin"
+    assert data["isbn"] == "VALIDATION-002"
+
+@pytest.mark.parametrize(
+    "total_copies, available_copies",
+    [
+        (-1, 0),
+        (3, -1),
+        (3, 5),
+    ]
+)
+
+def test_database_rejects_invalid_inventory(
+    db_session,
+    total_copies,
+    available_copies
+):
+    book = Book(
+        title="Database Constraint Test",
+        author="Test Author",
+        isbn="DB-INTEGRITY-001",
+        total_copies=total_copies,
+        available_copies=available_copies,
+        is_active=True
+    )
+
+    db_session.add(book)
+
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+
+    db_session.rollback()

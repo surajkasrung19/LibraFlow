@@ -284,6 +284,47 @@ http://127.0.0.1:8000/docs
 
 The frontend is served by the FastAPI application.
 
+## Backend Reliability and Security
+
+LibraFlow includes several backend reliability features designed to improve maintainability, debugging, and data integrity.
+
+### Request Logging and Tracing
+
+- HTTP request logging with method, path, status code, and execution
+  duration.
+- Unique request identifiers exposed through the X-Request-ID response
+  header.
+- Exception logging to support debugging.
+
+### Centralized Error Handling
+
+- Custom Python exceptions for loan-related business errors.
+- Centralized FastAPI exception handlers.
+- Consistent HTTP 404 and 409 responses for supported failure scenarios.
+
+### Input Validation and Database Integrity
+
+- Pydantic validation for API request data.
+- Input normalization for supported text fields.
+- SQLAlchemy constraints protecting book inventory consistency.
+- Database rollback handling for failed transactional operations.
+
+### HTTP Security Headers
+ The application configures the following response headers:
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: DENY
+- Referrer-Policy: no-referrer
+- Cache-Control: no-store for API responses
+These controls provide defense in depth but do not replace authentication or authorization.
+
+### Automated Testing
+- LibraFlow includes automated tests covering API behavior, business rules, exception handling, HTTP headers, reporting, and integration workflows.
+- Integration tests exercise borrowing, renewals, returns, and inventory consistency using an isolated SQLite test database.
+
+### Security Limitations
+- LibraFlow is currently intended for local development and portfolio demonstration. Authentication, role-based access control, and production deployment hardening remain future improvements.
+
+
 ## Running Tests
 
 LibraFlow uses Pytest for service-layer and API testing.
