@@ -1,10 +1,46 @@
 # LibraFlow — Library Management & Analytics System
 
-LibraFlow is a full-stack library management application built with **Python, FastAPI, SQLAlchemy, SQLite, Alembic, Pydantic, Pytest, HTML, CSS, and vanilla JavaScript**.
+**A Python FastAPI backend project demonstrating REST API
+development, relational database design, business-rule
+enforcement, and automated testing.**
 
-It provides RESTful APIs and a web interface for managing books, members, borrowing transactions, loan policies, and library analytics.
+LibraFlow is a full-stack library management application
+that helps manage books, members, borrowing transactions,
+loan renewals, and library circulation analytics.
 
-The project demonstrates backend development concepts including relational database design, API validation, business logic, database transactions, schema migrations, SQL aggregation, and automated testing.
+## Why LibraFlow?
+
+Managing library circulation involves more than storing
+books and member records. A reliable system must also
+prevent invalid borrowing operations, maintain accurate
+inventory, enforce library policies, and provide meaningful
+reports.
+
+LibraFlow addresses these challenges through a modular
+FastAPI backend, SQLAlchemy database models, configurable
+business rules, and automated tests.
+
+**Key capabilities:**
+
+- **Book & Member Management:** Manage inventory and member records with validation and soft deactivation.
+- **Loan Management:** Borrow, return, and renew books with inventory consistency checks.
+- **Business Rules:** Enforce borrowing limits, overdue restrictions, and renewal policies.
+- **Reporting & Analytics:** Monitor circulation activity, popular books, overdue loans, and inventory consistency.
+- **Backend Reliability:** Request tracing, centralized exception handling, security headers, and integration tests.
+
+**Technology:** Python 3.13 · FastAPI · SQLAlchemy · SQLite · Alembic · Pydantic · Pytest · JavaScript
+
+**Quick navigation:**
+[Features](#features) |
+[Screenshots](#screenshots) |
+[API Endpoints](#rest-api-endpoints) |
+[Local Setup](#running-locally) |
+[Running Tests](#running-tests)
+
+> **Project scope:** Developed for local execution and
+> portfolio demonstration. Authentication, role-based
+> authorization, and production deployment hardening
+> remain future improvements.
 
 ## Tech Stack
 
