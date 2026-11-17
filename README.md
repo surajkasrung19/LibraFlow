@@ -20,6 +20,13 @@ LibraFlow addresses these challenges through a modular
 FastAPI backend, SQLAlchemy database models, configurable
 business rules, and automated tests.
 
+## Project Demostration
+
+Watch LibraFlow in action, including book management,
+borrowing, renewals, analytics, and automated tests.
+
+[▶ Watch the LibraFlow Demo](https://youtu.be/vXN_tib6mHI)
+
 **Key capabilities:**
 
 - **Book & Member Management:** Manage inventory and member records with validation and soft deactivation.
@@ -179,6 +186,8 @@ LibraFlow follows a modular, service-oriented backend structure.
 | `backend/migrations/` | Alembic database schema migrations |
 | `backend/tests/` | Automated service and API tests |
 | `frontend/` | HTML, CSS, and JavaScript web interface |
+
+[View detailed system architecture](docs/architecture.md)
 
 ### Architecture Principles
 
