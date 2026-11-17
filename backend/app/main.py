@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import mimetypes
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -29,6 +30,9 @@ app.include_router(reports.router)
 BASE_DIR = Path(__file__).resolve().parents[2]
 FRONTEND_DIR = BASE_DIR / "frontend"
 
+# Explicit JavaScript MIME type registration.
+mimetypes.add_type("text/javascript", ".js")
+
 app.mount(
     "/static",
     StaticFiles(directory=FRONTEND_DIR),
@@ -39,11 +43,3 @@ print("FRONTEND DIRECTORY:", FRONTEND_DIR)
 @app.get("/", include_in_schema=False)
 def serve_frontend():
     return FileResponse(FRONTEND_DIR / "index.html")
-
-
-
-
-
-
-
-
